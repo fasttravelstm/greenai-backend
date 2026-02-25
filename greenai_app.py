@@ -75,7 +75,7 @@ EMAIL_ADDRESS = os.environ.get('EMAIL_ADDRESS')
 EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD')
 
 SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 465
+SMTP_PORT = 587
 
 
 def generate_otp():
@@ -88,15 +88,23 @@ def send_email(to_email, otp):
 
 Hi there,
 
+Thank you for choosing to verify your account with us. Below is your one-time password (OTP) to complete the verification process:
+
 Your OTP code: {otp}
 
-This code is valid for the next 10 minutes.
+This code is valid for the next 10 minutes, so please enter it soon to complete your registration.
+
+If you didn't request this OTP or need any assistance, feel free to contact us at tmsaipavan@gmail.com.
+
+Thank you for your trust, and welcome to GREENAI!
 
 Best regards,
 GREENAI Team
+tmsaipavan@gmail.com | 9962355558
 """
     try:
-        server = smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT)
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
         server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
         server.sendmail(EMAIL_ADDRESS, to_email, email_body)
         server.quit()
@@ -362,19 +370,26 @@ class ChatMessage(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(255), nullable=False)
     message = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.UTC))
+    timestamp = db.Column(db.String(50), nullable=False)
 
     def __init__(self, name, message):
         self.name = name
         self.message = message
-        self.timestamp = datetime.now(pytz.UTC)  # Store in UTC
+        self.timestamp = datetime.now(pytz.UTC).strftime('%Y-%m-%d %H:%M:%S')
 
     def to_dict(self):
+        # Handle both string and datetime timestamp
+        if isinstance(self.timestamp, str):
+            ts = self.timestamp
+        elif self.timestamp is not None:
+            ts = self.timestamp.isoformat()
+        else:
+            ts = datetime.now(pytz.UTC).isoformat()
         return {
             'id': self.id,
             'name': self.name,
             'message': self.message,
-            'timestamp': self.timestamp.isoformat()  # This will include timezone info
+            'timestamp': ts
         }
 
     def __repr__(self):
